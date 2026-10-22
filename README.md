@@ -141,10 +141,3 @@ In accordance with Section C.8 and C.9 of the CSSprint 2026 Participant Handbook
 * **Matplotlib:** Analytical margin visualization charts (PSF / BSD compatible)
 
 ---
-
-## 👥 9. Team Composition
-
-* **Earl Cedric C. Relunia** — *Lead Backend Architect & Optimization Logic Engineer*
-* **[Member 2 Name]** — *UI/UX Frontend Engineer & System Integrator*
-* **[Member 3 Name]** — *Product Strategist & Technical Documentation Lead*
-* **[Member 4 Name]** — *Pitch Architect & Video Demonstration Director*
