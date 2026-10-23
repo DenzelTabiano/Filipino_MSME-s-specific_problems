@@ -1,143 +1,118 @@
-   # 🥖 PanaderyaOptimizer: Intelligent Batch-Yield, Perishable Decay & Margin Sentinel for Filipino Bakeries
-   > *Developed for CSSprint 2026: Rooted in Innovation*  
-   > *University of Santo Tomas — College of Information and Computing Sciences*
+# PanaderyaOptimizer
 
-   ---
+A local web app prototype for Filipino bakeries to compare product prices, cost-based
+markups, demand assumptions, and daily production plans. The dashboard separates the
+editable assumptions from the calculated scenario results.
 
-   ## 📌 1. Problem Statement & Target Persona
+## What it currently does
 
-   ### The Target Persona
-   Independent community bakeries (*panaderias*), neighborhood pastry shops, and micro-scale bread entrepreneurs across the Philippines who operate on thin margins, fixed-capacity deck ovens, and same-day perishable inventories.
+- Starts with sample recipes and prices for Pan de Sal, Spanish Bread, and Ensaymada
+  stored in a local SQLite database.
+- Lets a user edit unit cost, current selling price, markup, competitor reference price,
+  daily base demand, and price elasticity in the **Inputs** tab.
+- Supports locking price, markup, or demand for each product. A price and markup lock
+  cannot both be selected for the same product.
+- Calculates scenarios for maximizing daily profit, breaking even, reaching a net
+  profit target, or maximizing units sold.
+- Observes the oven tray limit, estimates discrete tray production, and compares input
+  assumptions with recommended scenario values. The optional natural-language goal can
+  be interpreted by AI; the form also supports selecting the goal directly.
+- Shows summary and product-level tables, price/profit charts, and an optional AI
+  explanation when a Gemini API key is configured.
 
-   ### The Core Pain Point
-   Over 40,000 neighborhood *panaderias* sustain daily Filipino breakfast and merienda culture. Yet, over 85% of micro-bakers price their products through *gaya-gaya* (unverified neighbor copying) and bake static batch volumes by gut feel. This leads to two compounding operational failures:
+## Important: how to interpret recommendations
 
-   1. **The "Plancha" (Sheet Pan) Discrete Batch Bottleneck:**  
-      Bakers do not produce units individually; they bake in discrete baking trays (*planchas* of 24–30 pieces). If daily demand is 75 pieces, baking 2 trays (60 pcs) leaves money on the table, while baking 3 trays (90 pcs) creates 15 unsold pieces. Because traditional breads turn stale within 8 to 12 hours, surplus inventory is either discarded or salvaged at a heavy loss, directly bleeding working capital.
-   2. **Invisible Cost Distortion & Volatile Commodity Spikes:**  
-      When the cost of a 25kg flour sack, refined sugar, margarine, or 11kg commercial LPG spikes at the local wet market, bakers maintain static retail prices (e.g., ₱3.00 *pan de sal*). Because their pricing models fail to account for continuous oven preheating fuel, packaging, and the baker's own manual labor, they enter **"profitless volume"**—selling out their trays daily while quietly operating at an unrecovered net loss.
+This is a scenario calculator, not a demand-forecasting system. It does not have bakery
+sales history, competitor behavior, or locally measured price sensitivity. Each product
+starts with a price elasticity of `-1.0`, which is an editable assumption: a 1% price
+increase implies about a 1% demand decrease in the model. Estimated demand is calculated
+as:
 
-   ### Sustainable Development Goals (SDG) Alignment
-   * **SDG 8 (Target 8.3) — Decent Work & Economic Growth:** Promoting formalization and economic viability of micro-food enterprises by equipping unbanked bakers with true unit-cost accounting and viable gross/net margin visibility.
-   * **SDG 12 (Target 12.3) — Responsible Consumption & Production:** Slashing commercial retail food waste by dynamically equilibrating daily oven tray allocation against expected demand and scheduling afternoon salvage clearance pricing.
+```text
+base demand × (scenario price / current price) ^ price elasticity
+            × (1 + assumed demand uplift)
+```
 
-   ---
+For unlocked demand, the scenario search tests demand uplift assumptions of 0%, 20%,
+50%, and 100% **only when a positive daily promotion budget is entered**; the full
+entered budget is charged to every scenario that assumes an uplift. An uplift is still
+a hypothetical outcome that might require promotion, distribution, or other action;
+the software cannot make it happen or guarantee it. Competitor price is used as a
+comparison and candidate price point only. The app does not infer market share or
+competitor responses.
 
-   ## 💡 2. Proposed Solution & System Innovation
+Markup is measured on cost: `(price - unit cost) / unit cost`. For example, a 20%
+markup means `price = cost × 1.20`; this is not the same as a 20% gross margin.
+The **Target Markup (%)** field defines a cost-based candidate markup. Locking markup
+keeps that percentage and calculates the corresponding price from unit cost. Locking
+price keeps the current price fixed. Locking demand prevents the model from changing
+estimated demand.
 
-   **PanaderyaOptimizer** replaces static spreadsheets and manual notebooks with an interactive **Batch-Yield & Pricing Intelligence Engine**. It acts as a digital bakery manager that balances perishable shelf-life decay, discrete oven sheet capacities, ingredient price inflation, and user-specified operational objectives.
+Production is rounded to whole trays and limited by the oven capacity entered for the
+day. Daily net profit subtracts variable product costs, configured fixed overhead, and
+the promotion budget when a scenario assumes demand uplift. The starter database values
+are examples and should be replaced with each bakery's
+actual recipe quantities, ingredient costs, prices, demand, and overhead before relying
+on the results. Competitor prices and user-entered business data are not saved by the
+app; recipes, starter costs, prices, and overhead are stored locally in SQLite.
 
-   ```
-   ┌────────────────────────────────────────────────────────────────────────┐
-   │                        SYSTEM ARCHITECTURE                             │
-   ├───────────────────────────────────┬────────────────────────────────────┤
-   │ 🗣️ 1. Conversational Objective    │ 🧮 2. Deterministic Optimization  │
-   │    Compiler (Gemini API)          │    Engine (Pure Python / logic.py) │
-   ├───────────────────────────────────┼────────────────────────────────────┤
-   │ • Ingests natural Taglish voice/  │ • Discrete tray-batch ceiling math │
-   │   text targets from the baker.    │   and oven sheet allocations.      │
-   │ • Validates inputs and extracts   │ • True Unit Cost calculation       │
-   │   structured JSON constraints.    │   (Ingredients + LPG + Labor).     │
-   │ • Fully compliant with Rule C.4.c │ • Margin optimization & afternoon  │
-   │   (No arithmetic hallucination).  │   clearance markdown schedules.    │
-   └───────────────────────────────────┴────────────────────────────────────┘
-   ```
+Gemini is used only to parse a natural-language goal and explain calculated scenarios.
+The deterministic calculator is the source of scenario figures. When a Gemini API key
+is configured, the natural-language goal and scenario summary are sent to Google's
+Gemini API for those functions. Without a key, the app can still calculate scenarios
+and shows a notice that the AI explanation is unavailable; the local heuristic parser
+can extract some simple goals.
 
-   ### Key Technical Capabilities (MVP)
-   1. **Conversational Target Compiler:** Non-technical bakers express operational goals in everyday Taglish (e.g., *"Gusto ko maubos ang Spanish bread bago mag-4 PM kahit breakeven lang, pero dapat umabot sa ₱1,200 ang net profit gamit ang Ensaymada at Cheese Bread"*). The AI extracts explicit mathematical constraints without touching arithmetic calculations.
-   2. **Discrete Tray-Yield Allocator:** Calculates optimal *plancha* production quotas based on maximum deck oven capacity, preventing partial-tray fuel waste.
-   3. **True Unit-Cost & Shrinkflation Sentinel:** Computes the true baseline cost floor per piece by aggregating raw flour mixes, fat ratios, continuous LPG burn rates, and labor time.
-   4. **Perishable Decay & Clearance Markdown Engine:** For items with excess supply over expected morning demand, the engine calculates a dynamic afternoon discount tier to liquidate stock above variable cost, eliminating total food waste.
+## Requirements
 
-   ---
+- Python 3.10 or later
+- Internet access and a Google Gemini API key for AI interpretation/explanation
+  (scenario calculation itself runs locally)
 
-   ## 🤖 3. Artificial Intelligence Justification (Rule C.4.c Compliance)
+## Run locally
 
-   Section C.4.c of the CSSprint 2026 Handbook strictly penalizes solutions integrating AI without clear necessity. **PanaderyaOptimizer isolates AI strictly to semantic translation and data ingestion:**
+### Windows PowerShell
 
-   * **Why Traditional Code Fails for Input:** Filipino micro-bakers do not formulate business goals as linear programming constraint formulas ($Ax \le b$). Forcing them into rigid numerical parameter sheets creates immediate usability drop-off.
-   * **Why AI is Necessary:** Natural Language Processing (via Google Gemini) parses conversational, code-switched Taglish inputs, unstructured ingredient delivery notes, and multi-objective business intentions into strict, validated JSON schema representations.
-   * **Why Deterministic Logic Handles Computation:** Large Language Models are prone to arithmetic hallucination. All batch ceiling calculations, breakeven formulas, margin percentages, and tray distributions are executed exclusively by deterministic Python algorithms in `logic.py`, ensuring 100% mathematical accuracy and defensibility during the Day 3 Technical Q&A.
+```powershell
+git clone https://github.com/DenzelTabiano/PanaderyaOptimizer_TeamPowerhouse.git
+cd PanaderyaOptimizer_TeamPowerhouse
+py -3 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+```
 
-   ---
+To enable Gemini, create a `.env` file in the project folder:
 
-   ## 🧮 4. Mathematical Model & Optimization Logic
+```text
+GEMINI_API_KEY=your_actual_api_key_here
+```
 
-   ### A. True Unit Cost ($C_i$)
-   $$\text{Batch Cost}_i = \sum (\text{Ingredient Quantity}_j \times \text{Unit Cost}_j) + \text{Packaging}_i$$
-   $$C_i = \frac{\text{Batch Cost}_i + \left(\frac{\text{LPG Hourly Rate} \times \text{Bake Time}_i + \text{Labor Alloc}_i}{\text{Total Batches}}\right)}{\text{Units Per Batch}_i}$$
+Keep the key private and do not commit `.env`. Start the web app:
 
-   ### B. Discrete Tray-Batch Ceiling
-   $$\text{Trays Required}_i = \left\lceil \frac{\text{Projected Demand}_i}{\text{Tray Capacity}_i} \right\rceil$$
-   $$\text{Total Production Supply}_i = \text{Trays Required}_i \times \text{Tray Capacity}_i$$
+```powershell
+python app.py
+```
 
-   ### C. Objective Profit Optimization
-   $$\text{Max Profit} = \sum_{i} \left[ \min(\text{Supply}_i, \text{Demand}_i) \cdot P_i + \text{Surplus}_i \cdot P_{\text{clearance}, i} \right] - \sum_{i} (\text{Supply}_i \cdot C_i) - \text{Fixed Overhead}$$
-   $$\text{Subject to: } \sum_{i} \text{Trays Required}_i \le \text{Total Oven Deck Capacity}$$
+Open [http://127.0.0.1:7860](http://127.0.0.1:7860). Press **Ctrl+C** in the terminal
+to stop it.
 
-   ---
+### macOS / Linux
 
-   ## 🛠️ 5. Technical Architecture & Tech Stack
+```bash
+git clone https://github.com/DenzelTabiano/PanaderyaOptimizer_TeamPowerhouse.git
+cd PanaderyaOptimizer_TeamPowerhouse
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+```
 
-   * **Language:** Python 3.10+
-   * **Frontend UI Framework:** Gradio Blocks (Clean, responsive web-based operational dashboard with real-time reactive updates)
-   * **Mathematical Core & Optimization:** Pure Python standard library & Pandas (Deterministic constraint validation and array calculations)
-   * **Language Intelligence:** Google GenAI SDK (`google-genai` / Gemini 1.5 Flash) with Pydantic structured output schema enforcement
-   * **Persistence & Baseline Storage:** SQLite3 (Local, lightweight, zero-cloud dependency storing bread master recipes and wet-market commodity cost histories)
+Create the same `.env` file if using Gemini, then run `python app.py` and visit
+`http://127.0.0.1:7860`.
 
-   ---
+## Current scope and planned validation
 
-   ## ⚙️ 6. Installation & Local Execution
-
-   Ensure Python 3.10 or higher is installed on your local machine.
-
-   ```bash
-   # 1. Clone the repository
-   git clone https://github.com/[YOUR-ORGANIZATION-OR-USERNAME]/panaderya-optimizer.git
-   cd panaderya-optimizer
-
-   # 2. Create and activate a clean virtual environment
-   python -m venv .venv
-
-   # Windows (Command Prompt / PowerShell)
-   .venv\Scripts\activate
-
-   # macOS / Linux
-   source .venv/bin/activate
-
-   # 3. Install dependencies
-   pip install -r requirements.txt
-
-   # 4. Set up environment variables
-   # Create a .env file and add your Google Gemini API Key:
-   echo "GEMINI_API_KEY=your_actual_api_key_here" > .env
-
-   # 5. Run the application
-   python app.py
-   ```
-   Access the application dashboard by opening your browser to `http://127.0.0.1:7860`.
-
-   ---
-
-   ## 📈 7. Feasibility, Scalability & Sustainability
-
-   * **Deployment Feasibility:** Zero expensive hardware installations required. The application runs seamlessly on entry-level Android smartphones, tablets, or existing shop PCs through standard web browsers.
-   * **Offline Resilience:** If venue internet connectivity or cellular data drops, the application falls back automatically to local heuristic rule-matching and preset goal dropdowns in `logic.py`, ensuring uninterrupted bakery operations.
-   * **Commercial Sustainability Model:**
-   * **Free Core Tier:** Single-deck community bakeries access daily batch and pricing tools completely free of charge.
-   * **Supplier Restock Integration:** Future monetization derives from a modest 1.5% referral commission paid by wholesale flour and lard distributors when bakeries trigger consolidated ingredient restock manifests directly from their production summaries.
-
-   ---
-
-   ## 📚 8. Third-Party Resources & Compliance (Rule C.8 Attribution)
-
-   In accordance with Section C.8 and C.9 of the CSSprint 2026 Participant Handbook, all third-party libraries and assets are declared below:
-
-   * **Gradio:** UI composition framework (Apache-2.0 License)
-   * **Google GenAI SDK:** AI API interface client (Apache-2.0 License)
-   * **Pydantic:** Data validation and JSON schema enforcement (MIT License)
-   * **Pandas:** Tabular data processing and summary structures (BSD-3-Clause License)
-   * **Python-Dotenv:** Environment key isolation (BSD-3-Clause License)
-   * **Matplotlib:** Analytical margin visualization charts (PSF / BSD compatible)
-
-   ---
+The product list and recipe model are currently limited to products present in the
+SQLite database. The app does not yet learn elasticity from actual sales, manage
+historical competitor prices, persist user-edited daily assumptions, or execute
+marketing actions. Treat recommendations as decision-support scenarios and verify
+inputs and outputs with the bakery's own records.

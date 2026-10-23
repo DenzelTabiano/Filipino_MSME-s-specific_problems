@@ -120,11 +120,57 @@ def compile_taglish_intent(user_prompt: str) -> BakeryOperationalTarget:
                 temperature=0.1,  # Low temperature for deterministic, reliable parsing
             ),
         )
-        parsed_target: BakeryOperationalTarget = response.parsed
+        parsed_target = response.parsed
+        if not isinstance(parsed_target, BakeryOperationalTarget):
+            raise ValueError("Gemini returned no valid operational target.")
         return parsed_target
     except Exception as e:
         print(f"Notice: Gemini API call failed ({e}). Falling back to offline heuristic compiler.")
         return fallback_heuristic_parse(user_prompt)
+
+
+def explain_pricing_scenarios(user_goal: str, scenarios: list) -> str:
+    """Ask Gemini to explain already-calculated options without doing the math."""
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key or api_key == "your_actual_api_key_here":
+        return (
+            "**AI explanation unavailable:** configure `GEMINI_API_KEY` to enable it. "
+            "The scenario results above were calculated locally using the stated assumptions."
+        )
+
+    try:
+        client = get_genai_client()
+        response = client.models.generate_content(
+            model="gemini-3.8-flash",
+            contents=(
+                "Explain these bakery pricing scenarios to a small Filipino bakery owner. "
+                "Use the provided scenario figures exactly; do not recalculate, invent "
+                "numbers, or claim estimated demand is guaranteed. Compare the tradeoffs, "
+                "respect any locked price/markup/demand, and suggest practical next steps "
+                "as hypotheses rather than proven effects. Keep the response concise.\n\n"
+                f"User goal: {user_goal}\n"
+                f"Calculated scenarios (source of truth): {scenarios}"
+            ),
+            config=types.GenerateContentConfig(
+                system_instruction=(
+                    "You are an explanation assistant. The application's deterministic "
+                    "calculator is authoritative. Never alter its figures or promise outcomes."
+                ),
+                temperature=0.2,
+            ),
+        )
+        if not response.text or not response.text.strip():
+            return (
+                "**AI explanation unavailable:** Gemini returned an empty response. "
+                "The calculated scenario tables remain available above."
+            )
+        return response.text.strip()
+    except Exception as error:
+        print(f"Notice: Gemini scenario explanation failed ({error}).")
+        return (
+            "**AI explanation unavailable:** Gemini could not explain these options. "
+            "The calculated scenario tables remain available above."
+        )
 
 
 if __name__ == "__main__":

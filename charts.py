@@ -92,6 +92,51 @@ def generate_tray_allocation_pie_chart(summary: BakeryOptimizationSummary) -> pl
     return fig
 
 
+def generate_pricing_scenario_charts(results: dict) -> tuple[plt.Figure, plt.Figure]:
+    """Compare scenario profit and current versus recommended prices."""
+    scenarios = results["scenarios"]
+    profit_fig, profit_ax = plt.subplots(figsize=(8, 3.5), dpi=100)
+    labels = [scenario["label"] for scenario in scenarios]
+    profits = [scenario["net_profit"] for scenario in scenarios]
+    colors = ["#2e7d32" if profit >= 0 else "#c62828" for profit in profits]
+    profit_ax.barh(labels, profits, color=colors)
+    profit_ax.axvline(0, color="#333333", linewidth=0.8)
+    profit_ax.set_xlabel("Estimated daily net profit (PHP)")
+    profit_ax.set_title("Estimated net profit by scenario")
+    profit_ax.grid(axis="x", linestyle="--", alpha=0.4)
+    profit_fig.tight_layout()
+
+    goal_scenario = scenarios[0]
+    products = [item["Product"] for item, _ in goal_scenario["selected"]]
+    current_prices = [item["current_price"] for item, _ in goal_scenario["selected"]]
+    suggested_prices = [option["price"] for _, option in goal_scenario["selected"]]
+    price_fig, price_ax = plt.subplots(figsize=(8, 3.5), dpi=100)
+    positions = list(range(len(products)))
+    bar_height = 0.36
+    price_ax.barh(
+        [position - bar_height / 2 for position in positions],
+        current_prices,
+        height=bar_height,
+        label="Input price",
+        color="#1976d2",
+    )
+    price_ax.barh(
+        [position + bar_height / 2 for position in positions],
+        suggested_prices,
+        height=bar_height,
+        label="Goal recommendation",
+        color="#f57c00",
+    )
+    price_ax.set_yticks(positions)
+    price_ax.set_yticklabels(products)
+    price_ax.set_xlabel("Price (PHP)")
+    price_ax.set_title("Input price versus suggested price")
+    price_ax.legend()
+    price_ax.grid(axis="x", linestyle="--", alpha=0.4)
+    price_fig.tight_layout()
+    return profit_fig, price_fig
+
+
 if __name__ == "__main__":
     # Internal visual sanity check using mock optimization output
     mock_summary = BakeryOptimizationSummary(
