@@ -349,4 +349,4 @@ to each uplift scenario. The app cannot guarantee the assumed uplift will happen
 
 
 if __name__ == "__main__":
-    demo.launch(server_name="127.0.0.1", share=False, theme=gr.themes.Soft())
+    demo.launch(server_name="127.0.0.1", share=False)
