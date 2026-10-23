@@ -1,6 +1,10 @@
-# Pure Python mathematical core & optimization logic
-
 import math
+import sys
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
 from typing import Dict, Any, List
 from schema import (
     BakeryOperationalTarget,
@@ -19,7 +23,7 @@ def calculate_true_unit_cost(
     overhead_config: BakeryOverheadConfig
 ) -> float:
     """
-    Calculates true baseline cost floor per piece ($C_i$) aggregating:
+    Calculates true baseline cost floor per piece ($C_{i}$) aggregating:
     - Raw ingredient mix cost per batch
     - Direct packaging cost per piece
     - Continuous LPG fuel burn during baking time
@@ -44,7 +48,7 @@ def calculate_true_unit_cost(
 def calculate_discrete_tray_ceiling(demand_units: int, tray_capacity: int) -> int:
     """
     Computes discrete sheet-pan (*plancha*) tray allocation:
-    $\text{Trays Required}_i = \lceil \text{Demand}_i / \text{Tray Capacity}_i \rceil$
+    $\\text{Trays Required}_i = \\lceil \\text{Demand}_i / \\text{Tray Capacity}_i \\rceil$
     """
     if tray_capacity <= 0 or demand_units <= 0:
         return 0
@@ -53,8 +57,8 @@ def calculate_discrete_tray_ceiling(demand_units: int, tray_capacity: int) -> in
 
 def calculate_clearance_price(true_unit_cost: float, retail_price: float) -> float:
     """
-    Calculates dynamic afternoon markdown discount price ($P_{\text{clearance}, i}$).
-    Ensures liquidation price stays strictly above variable cost $C_i$ to recover capital.
+    Calculates dynamic afternoon markdown discount price ($P_{clearance,i}$).
+    Ensures liquidation price stays strictly above variable cost $C_{i}$ to recover capital.
     """
     # 20% margin recovery above variable cost, capped at 60% of retail price
     recovery_price = round(true_unit_cost * 1.20, 2)
@@ -69,7 +73,7 @@ def optimize_bakery_production(
     target: BakeryOperationalTarget
 ) -> BakeryOptimizationSummary:
     """
-    Deterministic optimization engine that balances tray allocation, 
+    Deterministic optimization engine that balances tray allocation,
     deck capacity bounds, true unit costs, and perishable clearance revenue.
     """
     overhead_config = fetch_overhead_config()
@@ -145,7 +149,7 @@ def optimize_bakery_production(
         # Sort items by unit profit margin descending (prioritize high-margin trays)
         raw_item_data.sort(key=lambda x: x["unit_profit_margin"], reverse=True)
         allocated_trays = 0
-        
+
         for item in raw_item_data:
             if allocated_trays + item["trays_req"] <= max_deck_capacity:
                 allocated_trays += item["trays_req"]
@@ -235,4 +239,4 @@ if __name__ == "__main__":
     print(f"Gross Revenue: ₱{summary.gross_revenue}")
     print(f"Total Variable Cost: ₱{summary.total_variable_costs}")
     print(f"Net Profit: ₱{summary.net_profit}")
-    print("--------------------------------------")
+    print("---------------------------------------")

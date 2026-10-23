@@ -1,36 +1,34 @@
-# Pydantic models for structured AI extraction
-
 from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # 1. INPUT SCHEMAS: AI Conversational Compiler Targets
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 class ItemConstraint(BaseModel):
     """
-    Extracted constraints and roles for individual baked goods parsed 
+    Extracted constraints and roles for individual baked goods parsed
     from the baker's natural Taglish prompt.
     """
     item_name: str = Field(
-        ..., 
+        ...,
         description="Name of the baked product (e.g., Pan de Sal, Ensaymada, Spanish Bread)."
     )
     target_demand_units: Optional[int] = Field(
-        default=None, 
+        default=None,
         description="Explicit requested unit count if specified by the baker."
     )
     clearance_deadline: Optional[str] = Field(
-        default=None, 
+        default=None,
         description="Target time by which surplus inventory must be cleared (e.g., '16:00')."
     )
     min_acceptable_margin: Optional[str] = Field(
-        default="breakeven", 
+        default="breakeven",
         description="Minimum acceptable margin goal ('breakeven', 'standard', 'high')."
     )
     role: Optional[str] = Field(
-        default="standard", 
+        default="standard",
         description="Operational strategy role ('volume_driver', 'profit_driver', 'salvage_only')."
     )
 
@@ -41,26 +39,26 @@ class BakeryOperationalTarget(BaseModel):
     Taglish operational goals (Rule C.4.c Compliance).
     """
     target_net_profit: Optional[float] = Field(
-        default=None, 
+        default=None,
         description="Target daily net profit in PHP specified by the baker."
     )
     max_oven_capacity_trays: Optional[int] = Field(
-        default=None, 
+        default=None,
         description="Overriding deck oven tray capacity limit if mentioned by the baker."
     )
     shift_duration_hours: Optional[float] = Field(
-        default=8.0, 
+        default=8.0,
         description="Total duration of the baking shift in hours."
     )
     item_constraints: List[ItemConstraint] = Field(
-        default_factory=list, 
+        default_factory=list,
         description="List of product-specific target constraints parsed from the prompt."
     )
 
 
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # 2. DATABASE & LOGIC SCHEMAS: Master Data & Calculation Models
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 class IngredientCost(BaseModel):
     """
@@ -68,7 +66,7 @@ class IngredientCost(BaseModel):
     """
     ingredient_name: str
     unit_cost_php: float
-    unit_type: str  # e.g., 'kg', 'liter', 'bag'
+    unit_type: str  # e.g., 'gram', 'kg', 'liter', 'bag'
 
 
 class RecipeIngredient(BaseModel):
@@ -96,26 +94,26 @@ class BakeryOverheadConfig(BaseModel):
     Operational expenses required to compute true unit cost (C_i).
     """
     lpg_hourly_rate_php: float = Field(
-        default=45.0, 
+        default=45.0,
         description="LPG fuel cost per hour of continuous deck oven operation."
     )
     baker_hourly_wage_php: float = Field(
-        default=75.0, 
+        default=75.0,
         description="Direct labor allocation cost per hour."
     )
     fixed_daily_overhead_php: float = Field(
-        default=300.0, 
+        default=300.0,
         description="Daily static expenses (rent, utilities, store permits)."
     )
     max_deck_tray_capacity: int = Field(
-        default=12, 
+        default=12,
         description="Total available deck oven sheet capacity per shift."
     )
 
 
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # 3. OUTPUT SCHEMAS: Deterministic Engine Execution Metrics
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 class ItemBatchYieldMetrics(BaseModel):
     """

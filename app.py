@@ -1,4 +1,10 @@
 import os
+import sys
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
 import gradio as gr
 import pandas as pd
 from dotenv import load_dotenv
@@ -38,14 +44,14 @@ def run_pipeline(user_prompt: str):
 
         # Step 3: Format high-level KPI cards text
         kpi_text = f"""
-        ### 📊 Operational Summary
-        * **Target Net Profit Met:** {'✅ YES' if summary.target_profit_met else '❌ NO'}
-        * **Net Profit:** ₱{summary.net_profit:,.2f}
-        * **Gross Revenue:** ₱{summary.gross_revenue:,.2f}
-        * **Total Variable Cost:** ₱{summary.total_variable_costs:,.2f}
-        * **Fixed Daily Overhead:** ₱{summary.fixed_overhead:,.2f}
-        * **Oven Capacity Utilized:** {summary.deck_capacity_utilized_pct}% ({summary.total_trays_allocated} trays)
-        """
+### 📊 Operational Summary
+* **Target Net Profit Met:** {'✅ YES' if summary.target_profit_met else '❌ NO'}
+* **Net Profit:** ₱{summary.net_profit:,.2f}
+* **Gross Revenue:** ₱{summary.gross_revenue:,.2f}
+* **Total Variable Cost:** ₱{summary.total_variable_costs:,.2f}
+* **Fixed Daily Overhead:** ₱{summary.fixed_overhead:,.2f}
+* **Oven Capacity Utilized:** {summary.deck_capacity_utilized_pct}% ({summary.total_trays_allocated} trays)
+"""
 
         # Step 4: Build Pandas DataFrame for tabular display
         table_data = []
@@ -81,12 +87,12 @@ def run_pipeline(user_prompt: str):
 
 
 # Build Gradio Blocks Dashboard Interface
-with gr.Blocks(title="PanaderyaOptimizer Dashboard", theme=gr.themes.Soft()) as demo:
+with gr.Blocks(title="PanaderyaOptimizer Dashboard") as demo:
     gr.Markdown("""
-    # 🥖 PanaderyaOptimizer
-    ### Intelligent Batch-Yield, Perishable Decay & Margin Sentinel for Filipino Bakeries
-    *Rooted in Innovation — CSSprint 2026*
-    """)
+# 🥖 PanaderyaOptimizer
+### Intelligent Batch-Yield, Perishable Decay & Margin Sentinel for Filipino Bakeries
+*Rooted in Innovation — CSSprint 2026*
+""")
 
     with gr.Row():
         with gr.Column(scale=2):
@@ -111,7 +117,7 @@ with gr.Blocks(title="PanaderyaOptimizer Dashboard", theme=gr.themes.Soft()) as 
             kpi_output = gr.Markdown("### 📊 Operational Summary\n*Submit a prompt to view real-time yield analysis.*")
 
     gr.Markdown("---")
-    
+
     with gr.Row():
         table_output = gr.Dataframe(
             label="📦 Product Batch Yield & Pricing Allocation Matrix",
@@ -137,4 +143,4 @@ with gr.Blocks(title="PanaderyaOptimizer Dashboard", theme=gr.themes.Soft()) as 
     )
 
 if __name__ == "__main__":
-    demo.launch(server_name="127.0.0.1", server_port=7860, share=False)
+    demo.launch(server_name="127.0.0.1", share=False, theme=gr.themes.Soft())

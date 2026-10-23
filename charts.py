@@ -1,5 +1,3 @@
-# Matplotlib visual generators
-
 import matplotlib.pyplot as plt
 import pandas as pd
 from typing import List
@@ -11,7 +9,7 @@ plt.style.use("ggplot")
 
 def generate_revenue_breakdown_chart(summary: BakeryOptimizationSummary) -> plt.Figure:
     """
-    Generates a grouped horizontal bar chart comparing Expected Gross Revenue 
+    Generates a grouped horizontal bar chart comparing Expected Gross Revenue
     vs. Total Variable Costs per baked item.
     """
     items: List[ItemBatchYieldMetrics] = summary.items
@@ -27,22 +25,22 @@ def generate_revenue_breakdown_chart(summary: BakeryOptimizationSummary) -> plt.
     })
 
     fig, ax = plt.subplots(figsize=(7, 3.5), dpi=100)
-    
+
     y_positions = range(len(names))
     bar_height = 0.35
 
     ax.barh(
-        [y - bar_height / 2 for y in y_positions], 
-        df["Gross Revenue (₱)"], 
-        height=bar_height, 
-        label="Gross Revenue (₱)", 
+        [y - bar_height / 2 for y in y_positions],
+        df["Gross Revenue (₱)"],
+        height=bar_height,
+        label="Gross Revenue (₱)",
         color="#2e7d32"
     )
     ax.barh(
-        [y + bar_height / 2 for y in y_positions], 
-        df["Variable Cost (₱)"], 
-        height=bar_height, 
-        label="Variable Cost (₱)", 
+        [y + bar_height / 2 for y in y_positions],
+        df["Variable Cost (₱)"],
+        height=bar_height,
+        label="Variable Cost (₱)",
         color="#c62828"
     )
 
@@ -59,8 +57,8 @@ def generate_revenue_breakdown_chart(summary: BakeryOptimizationSummary) -> plt.
 
 def generate_tray_allocation_pie_chart(summary: BakeryOptimizationSummary) -> plt.Figure:
     """
-    Generates a pie chart displaying the distribution of deck oven trays 
-    (*planchas*) allocated across baked goods.
+    Generates a pie chart displaying the distribution of deck oven trays (*planchas*)
+    allocated across baked goods.
     """
     items: List[ItemBatchYieldMetrics] = summary.items
 
@@ -75,12 +73,12 @@ def generate_tray_allocation_pie_chart(summary: BakeryOptimizationSummary) -> pl
         return fig
 
     colors = ["#f57c00", "#1976d2", "#388e3c", "#7b1fa2", "#d32f2f"]
-    
+
     wedges, texts, autotexts = ax.pie(
-        trays, 
-        labels=names, 
-        autopct="%1.1f%%", 
-        startangle=140, 
+        trays,
+        labels=names,
+        autopct="%1.1f%%",
+        startangle=140,
         colors=colors[:len(trays)],
         textprops=dict(color="black")
     )
@@ -96,8 +94,6 @@ def generate_tray_allocation_pie_chart(summary: BakeryOptimizationSummary) -> pl
 
 if __name__ == "__main__":
     # Internal visual sanity check using mock optimization output
-    from schema import ItemBatchYieldMetrics, BakeryOptimizationSummary
-
     mock_summary = BakeryOptimizationSummary(
         total_trays_allocated=10,
         deck_capacity_utilized_pct=83.3,

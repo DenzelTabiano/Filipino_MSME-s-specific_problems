@@ -1,5 +1,3 @@
-#SQLite 3 interface for master recipes & costs
-
 import sqlite3
 import os
 from typing import List, Dict, Any, Optional
@@ -25,48 +23,48 @@ def init_db() -> None:
 
     # 1. Ingredients Table
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS ingredients (
-            ingredient_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL,
-            unit_cost_php REAL NOT NULL,
-            unit_type TEXT NOT NULL
-        );
+    CREATE TABLE IF NOT EXISTS ingredients (
+        ingredient_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        unit_cost_php REAL NOT NULL,
+        unit_type TEXT NOT NULL
+    );
     """)
 
     # 2. Products Master Table
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS products (
-            product_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            item_name TEXT UNIQUE NOT NULL,
-            units_per_batch INTEGER NOT NULL,
-            tray_capacity INTEGER NOT NULL,
-            bake_time_minutes REAL NOT NULL,
-            packaging_cost_per_unit REAL NOT NULL,
-            default_retail_price REAL NOT NULL
-        );
+    CREATE TABLE IF NOT EXISTS products (
+        product_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        item_name TEXT UNIQUE NOT NULL,
+        units_per_batch INTEGER NOT NULL,
+        tray_capacity INTEGER NOT NULL,
+        bake_time_minutes REAL NOT NULL,
+        packaging_cost_per_unit REAL NOT NULL,
+        default_retail_price REAL NOT NULL
+    );
     """)
 
     # 3. Product Recipe Mapping Table
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS recipe_items (
-            recipe_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            product_id INTEGER NOT NULL,
-            ingredient_id INTEGER NOT NULL,
-            quantity_required REAL NOT NULL,
-            FOREIGN KEY (product_id) REFERENCES products (product_id) ON DELETE CASCADE,
-            FOREIGN KEY (ingredient_id) REFERENCES ingredients (ingredient_id) ON DELETE CASCADE
-        );
+    CREATE TABLE IF NOT EXISTS recipe_items (
+        recipe_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER NOT NULL,
+        ingredient_id INTEGER NOT NULL,
+        quantity_required REAL NOT NULL,
+        FOREIGN KEY (product_id) REFERENCES products (product_id) ON DELETE CASCADE,
+        FOREIGN KEY (ingredient_id) REFERENCES ingredients (ingredient_id) ON DELETE CASCADE
+    );
     """)
 
     # 4. Overhead Configuration Table
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS overhead_config (
-            id INTEGER PRIMARY KEY CHECK (id = 1),
-            lpg_hourly_rate_php REAL NOT NULL,
-            baker_hourly_wage_php REAL NOT NULL,
-            fixed_daily_overhead_php REAL NOT NULL,
-            max_deck_tray_capacity INTEGER NOT NULL
-        );
+    CREATE TABLE IF NOT EXISTS overhead_config (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        lpg_hourly_rate_php REAL NOT NULL,
+        baker_hourly_wage_php REAL NOT NULL,
+        fixed_daily_overhead_php REAL NOT NULL,
+        max_deck_tray_capacity INTEGER NOT NULL
+    );
     """)
 
     conn.commit()
@@ -83,14 +81,15 @@ def _seed_baseline_data(conn: sqlite3.Connection) -> None:
     """Seeds default wet-market commodity prices and master bread recipes."""
     cursor = conn.cursor()
 
-    # Seed Baseline Commodities (Philippine Wet Market Rates)
+    # Seed Baseline Commodities (Philippine Wet Market Rates per gram)
+    # ₱45/kg = ₱0.045/g, ₱80/kg = ₱0.08/g, etc.
     ingredients_data = [
-        ("Bread Flour", 1.80, "gram"),      # ~₱45/kg
-        ("Refined Sugar", 0.08, "gram"),    # ~₱80/kg
-        ("Margarine", 0.12, "gram"),        # ~₱120/kg
-        ("Yeast", 0.35, "gram"),            # ~₱350/kg
-        ("Cheese Bar", 0.25, "gram"),       # ~₱250/kg
-        ("Breadcrumbs", 0.06, "gram")       # ~₱60/kg
+        ("Bread Flour", 0.045, "gram"),   # ~₱45/kg
+        ("Refined Sugar", 0.08, "gram"),   # ~₱80/kg
+        ("Margarine", 0.12, "gram"),       # ~₱120/kg
+        ("Yeast", 0.35, "gram"),           # ~₱350/kg
+        ("Cheese Bar", 0.25, "gram"),      # ~₱250/kg
+        ("Breadcrumbs", 0.06, "gram")      # ~₱60/kg
     ]
     cursor.executemany(
         "INSERT INTO ingredients (name, unit_cost_php, unit_type) VALUES (?, ?, ?);",
@@ -99,8 +98,8 @@ def _seed_baseline_data(conn: sqlite3.Connection) -> None:
 
     # Seed Default Overhead Config
     cursor.execute("""
-        INSERT INTO overhead_config (id, lpg_hourly_rate_php, baker_hourly_wage_php, fixed_daily_overhead_php, max_deck_tray_capacity)
-        VALUES (1, 45.0, 75.0, 300.0, 12);
+    INSERT INTO overhead_config (id, lpg_hourly_rate_php, baker_hourly_wage_php, fixed_daily_overhead_php, max_deck_tray_capacity)
+    VALUES (1, 45.0, 75.0, 300.0, 12);
     """)
 
     # Helper map for ingredient IDs
@@ -116,10 +115,10 @@ def _seed_baseline_data(conn: sqlite3.Connection) -> None:
 
     for item_name, units_per_batch, tray_cap, bake_time, pkg_cost, price in products:
         cursor.execute("""
-            INSERT INTO products (item_name, units_per_batch, tray_capacity, bake_time_minutes, packaging_cost_per_unit, default_retail_price)
-            VALUES (?, ?, ?, ?, ?, ?);
+        INSERT INTO products (item_name, units_per_batch, tray_capacity, bake_time_minutes, packaging_cost_per_unit, default_retail_price)
+        VALUES (?, ?, ?, ?, ?, ?);
         """, (item_name, units_per_batch, tray_cap, bake_time, pkg_cost, price))
-        
+
         prod_id = cursor.lastrowid
 
         # Recipe Ingredients per Batch
@@ -150,8 +149,8 @@ def _seed_baseline_data(conn: sqlite3.Connection) -> None:
 
         for ing_id, qty in recipe:
             cursor.execute("""
-                INSERT INTO recipe_items (product_id, ingredient_id, quantity_required)
-                VALUES (?, ?, ?);
+            INSERT INTO recipe_items (product_id, ingredient_id, quantity_required)
+            VALUES (?, ?, ?);
             """, (prod_id, ing_id, qty))
 
     conn.commit()
@@ -175,7 +174,7 @@ def fetch_overhead_config() -> BakeryOverheadConfig:
 
 def fetch_master_recipes() -> Dict[str, Dict[str, Any]]:
     """
-    Fetches all master product recipes along with ingredient cost breakdowns 
+    Fetches all master product recipes along with ingredient cost breakdowns
     and standard retail prices for deterministic calculations.
     """
     conn = get_connection()
@@ -191,12 +190,12 @@ def fetch_master_recipes() -> Dict[str, Dict[str, Any]]:
         item_name = prod["item_name"]
 
         cursor.execute("""
-            SELECT i.name, i.unit_cost_php, r.quantity_required 
-            FROM recipe_items r
-            JOIN ingredients i ON r.ingredient_id = i.ingredient_id
-            WHERE r.product_id = ?;
+        SELECT i.name, i.unit_cost_php, r.quantity_required
+        FROM recipe_items r
+        JOIN ingredients i ON r.ingredient_id = i.ingredient_id
+        WHERE r.product_id = ?;
         """, (prod_id,))
-        
+
         ingredients_rows = cursor.fetchall()
         recipe_ingredients = []
         batch_raw_ingredient_cost = 0.0
