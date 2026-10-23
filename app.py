@@ -1,5 +1,3 @@
-# Gradio UI dashboard & event orchestration
-
 import os
 import gradio as gr
 import pandas as pd
@@ -139,4 +137,4 @@ with gr.Blocks(title="PanaderyaOptimizer Dashboard", theme=gr.themes.Soft()) as 
     )
 
 if __name__ == "__main__":
-    demo.launch(share=True)
+    demo.launch(server_name="127.0.0.1", server_port=7860, share=False)
